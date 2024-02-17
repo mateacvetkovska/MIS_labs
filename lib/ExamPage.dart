@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'exam.dart';
 
-class ExamWidget extends StatefulWidget {
+class ExamPage extends StatefulWidget {
   final Function(Exam) addExam;
 
-  const ExamWidget({Key? key, required this.addExam}) : super(key: key);
+  const ExamPage({Key? key, required this.addExam}) : super(key: key);
 
   @override
-  ExamWidgetState createState() => ExamWidgetState();
+  ExamPageState createState() => ExamPageState();
 }
 
-class ExamWidgetState extends State<ExamWidget> {
+class ExamPageState extends State<ExamPage> {
   final TextEditingController _subjectController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _classroomController = TextEditingController();
@@ -124,7 +124,7 @@ class ExamWidgetState extends State<ExamWidget> {
                     style: TextStyle(fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
-                    primary: Colors.blue,
+                    backgroundColor: Colors.blue,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -149,7 +149,7 @@ class ExamWidgetState extends State<ExamWidget> {
                     style: TextStyle(fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(
-                    primary: Colors.blue,
+                    backgroundColor: Colors.blue,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -178,7 +178,7 @@ class ExamWidgetState extends State<ExamWidget> {
                   style: TextStyle(fontSize: 16),
                 ),
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.blue,
+                  backgroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),

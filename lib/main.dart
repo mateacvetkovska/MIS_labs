@@ -1,13 +1,36 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:lab3_201139/CalendarPage.dart';
+import 'NotificationController.dart';
 import 'exam.dart';
-import 'widget.dart';
+import 'ExamPage.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await AwesomeNotifications().initialize(null, [
+    NotificationChannel(
+      channelGroupKey: "basic_channel_group",
+      channelKey: "basic_channel",
+      channelName: "basic_notif",
+      channelDescription: "basic notification channel",
+    )
+  ], channelGroups: [
+    NotificationChannelGroup(
+        channelGroupKey: "basic_channel_group", channelGroupName: "basic_group")
+  ]);
+
+  bool isAllowedToSendNotification =
+  await AwesomeNotifications().isNotificationAllowed();
+
+  if (!isAllowedToSendNotification) {
+    AwesomeNotifications().requestPermissionToSendNotifications();
+  }
+
   runApp(const MyApp());
 }
 
@@ -22,12 +45,12 @@ class MyApp extends StatelessWidget {
         hintColor: Colors.amber,
         fontFamily: 'Roboto',
         textTheme: TextTheme(
-          headline1: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold, color: Colors.black),
-          bodyText1: TextStyle(fontSize: 16.0, color: Colors.black87),
+          displayLarge: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold, color: Colors.black),
+          bodyLarge: TextStyle(fontSize: 16.0, color: Colors.black87),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            primary: Colors.teal,
+            backgroundColor: Colors.teal,
             textStyle: TextStyle(fontSize: 18.0),
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             shape: RoundedRectangleBorder(
@@ -72,11 +95,35 @@ class _MainListScreenState extends State<MainListScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    AwesomeNotifications().setListeners(
+        onActionReceivedMethod: NotificationController.onActionReceiveMethod,
+        onDismissActionReceivedMethod:
+        NotificationController.onDismissActionReceiveMethod,
+        onNotificationCreatedMethod:
+        NotificationController.onNotificationCreateMethod,
+        onNotificationDisplayedMethod:
+        NotificationController.onNotificationDisplayed);
+    _scheduleNotificationsForExistingExams();
+  }
+
+  void _scheduleNotificationsForExistingExams() {
+    for (int i = 0; i < exams.length; i++) {
+      _scheduleNotification(exams[i]);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Exams'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: _openCalendar,
+          ),
           IconButton(
             icon: const Icon(Icons.add_circle),
             onPressed: () => FirebaseAuth.instance.currentUser != null
@@ -90,73 +137,46 @@ class _MainListScreenState extends State<MainListScreen> {
         ],
       ),
       body: GridView.builder(
+        padding: const EdgeInsets.all(10), // Reduced padding for more space
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.9,
+          childAspectRatio: 0.8, // Adjusted for better fitting of items
           crossAxisSpacing: 8.0,
           mainAxisSpacing: 8.0,
         ),
         itemCount: exams.length,
         itemBuilder: (context, index) {
-          final course = exams[index].course;
-          final timestamp = exams[index].timestamp;
-          final description = exams[index].description;
-          final classroom = exams[index].classroom;
-
+          final exam = exams[index];
           return Card(
             elevation: 4,
-            margin: const EdgeInsets.all(8),
+            margin: const EdgeInsets.all(5),
             color: Colors.blueGrey,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: InkWell(
-              onTap: () {
-                // Handle tap on the card
-              },
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.book,
-                    size: 48,
-                    color: Colors.white,
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    course,
-                    style: TextStyle(fontSize: 20.0, color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Date: ${timestamp.toString().split(' ')[0]}',
-                    style: TextStyle(fontSize: 14.0, color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Time: ${timestamp.toString().split(' ')[1]}',
-                    style: TextStyle(fontSize: 14.0, color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 5), // Add spacing
-                  Text(
-                    'Description: $description', // Display description
-                    style: TextStyle(fontSize: 14.0, color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 5), // Add spacing
-                  Text(
-                    'Classroom: $classroom', // Display classroom
-                    style: TextStyle(fontSize: 14.0, color: Colors.white),
-                    textAlign: TextAlign.center,
-                  ),
+                  Icon(Icons.book, size: 30, color: Colors.white),
+                  SizedBox(height: 5), // Added for spacing
+                  Text(exam.course, style: TextStyle(fontSize: 14.0, color: Colors.white), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
+                  Text('Date: ${exam.timestamp.toString().split(' ')[0]}', style: TextStyle(fontSize: 12.0, color: Colors.white), textAlign: TextAlign.center),
+                  Text('Time: ${exam.timestamp.toString().split(' ')[1]}', style: TextStyle(fontSize: 12.0, color: Colors.white), textAlign: TextAlign.center),
+                  Text('Description: ${exam.description}', style: TextStyle(fontSize: 12.0, color: Colors.white), textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, maxLines: 5),
+                  Text('Classroom: ${exam.classroom}', style: TextStyle(fontSize: 12.0, color: Colors.white), textAlign: TextAlign.center),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _openCalendar() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CalendarScreen(exams: exams),
       ),
     );
   }
@@ -178,7 +198,7 @@ class _MainListScreenState extends State<MainListScreen> {
           return GestureDetector(
             onTap: () {},
             behavior: HitTestBehavior.opaque,
-            child: ExamWidget(
+            child: ExamPage(
               addExam: _addExam,
             ),
           );
@@ -188,7 +208,25 @@ class _MainListScreenState extends State<MainListScreen> {
   void _addExam(Exam exam) {
     setState(() {
       exams.add(exam);
+      _scheduleNotification(exam);
     });
+  }
+
+  void _scheduleNotification(Exam exam) {
+    final int notificationId = exams.indexOf(exam);
+
+    AwesomeNotifications().createNotification(
+        content: NotificationContent(
+            id: notificationId,
+            channelKey: "basic_channel",
+            title: exam.course,
+            body: "You have an exam tomorrow!"),
+        schedule: NotificationCalendar(
+            day: exam.timestamp.subtract(const Duration(days: 1)).day,
+            month: exam.timestamp.subtract(const Duration(days: 1)).month,
+            year: exam.timestamp.subtract(const Duration(days: 1)).year,
+            hour: exam.timestamp.subtract(const Duration(days: 1)).hour,
+            minute: exam.timestamp.subtract(const Duration(days: 1)).minute));
   }
 }
 
@@ -306,7 +344,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                primary: Colors.teal,
+                backgroundColor: Colors.teal,
                 padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
