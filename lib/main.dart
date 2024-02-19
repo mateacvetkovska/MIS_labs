@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:lab3_201139/CalendarPage.dart';
 import 'NotificationController.dart';
+import 'NotificationService.dart';
 import 'exam.dart';
 import 'ExamPage.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lab3_201139/Map.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,18 +96,22 @@ class _MainListScreenState extends State<MainListScreen> {
     ),
   ];
 
+  bool _isLocationBasedNotificationsEnabled = false;
+
   @override
   void initState() {
     super.initState();
+
+
     AwesomeNotifications().setListeners(
         onActionReceivedMethod: NotificationController.onActionReceiveMethod,
         onDismissActionReceivedMethod:
-        NotificationController.onDismissActionReceiveMethod,
+          NotificationController.onDismissActionReceiveMethod,
         onNotificationCreatedMethod:
-        NotificationController.onNotificationCreateMethod,
+          NotificationController.onNotificationCreateMethod,
         onNotificationDisplayedMethod:
-        NotificationController.onNotificationDisplayed);
-    _scheduleNotificationsForExistingExams();
+          NotificationController.onNotificationDisplayed);
+    NotificationService().scheduleNotificationsForExistingExams(exams);
   }
 
   void _scheduleNotificationsForExistingExams() {
@@ -124,6 +130,14 @@ class _MainListScreenState extends State<MainListScreen> {
             icon: const Icon(Icons.calendar_month),
             onPressed: _openCalendar,
           ),
+          IconButton(onPressed: _openMap, icon: const Icon(Icons.map)),
+          IconButton(
+            icon: const Icon(Icons.alarm_add),
+            color: _isLocationBasedNotificationsEnabled
+                ? Colors.amberAccent
+                : Colors.grey,
+            onPressed: _toggleLocationNotifications,
+          ),
           IconButton(
             icon: const Icon(Icons.add_circle),
             onPressed: () => FirebaseAuth.instance.currentUser != null
@@ -137,10 +151,10 @@ class _MainListScreenState extends State<MainListScreen> {
         ],
       ),
       body: GridView.builder(
-        padding: const EdgeInsets.all(10), // Reduced padding for more space
+        padding: const EdgeInsets.all(10),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.8, // Adjusted for better fitting of items
+          childAspectRatio: 0.8,
           crossAxisSpacing: 8.0,
           mainAxisSpacing: 8.0,
         ),
@@ -170,6 +184,39 @@ class _MainListScreenState extends State<MainListScreen> {
         },
       ),
     );
+  }
+
+  void _toggleLocationNotifications() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Location Based Notifications"),
+          content: _isLocationBasedNotificationsEnabled
+              ? const Text("You have turned off location-based notifications")
+              : const Text("You have turned on location-based notifications"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                NotificationService().toggleLocationNotification();
+                setState(() {
+                  _isLocationBasedNotificationsEnabled =
+                  !_isLocationBasedNotificationsEnabled;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text("OK"),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  void _openMap() {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => MapWidget()));
   }
 
   void _openCalendar() {
