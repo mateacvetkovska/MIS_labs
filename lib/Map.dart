@@ -27,7 +27,7 @@ class _MapWidgetState extends State<MapWidget> {
       ),
       body: FlutterMap(
         options: const MapOptions(
-          initialCenter: LatLng(41.9981, 21.4254),
+          initialCenter: LatLng(41.9813, 21.4548),
           initialZoom: 13,
         ),
         children: [
